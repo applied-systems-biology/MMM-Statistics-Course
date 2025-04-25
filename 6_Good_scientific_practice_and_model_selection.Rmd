@@ -1,0 +1,31 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r import libraries, echo = FALSE, message=FALSE}
+rm(list = ls()) # This clear all R-history and should be included in all code
+library(dplyr)  # Library for more elegant data handling
+library(ggplot2)# Powerful plotting library
+library(tidyr)
+```
+
+## Hack your way to scientific glory
+Go to https://stats.andrewheiss.com/hack-your-way/. First you should note that this webpage is done in R with the [Quarto Publishing](https://quarto.org/docs/publishing/quarto-pub.html) tool. Now use the tool to check if you can show statistically significantly that Democrats and Republicans are good for the economy. Can you show that both are bad for the economy as well? If you want to read more on the background of this, I recommend [this article](https://fivethirtyeight.com/features/science-isnt-broken/#part1).
+
+## Student weight
+In the part about ANOVA and Multiple comparisons, we saw that the student weight was significantly different between the different major subjects. We did not really investigate why that is. Could there be a confounder that we missed? Try different models of different complexity to explain the different weights. Use Akaike's Information Criterion (AIC) to pick the best model. What happens to the significance of *major* subject as a predictor of weight when you include other other, possibly better, variables in your regression model?
+ 
+```{r student data, echo = TRUE, message=TRUE}
+  students <- read.csv("https://userpage.fu-berlin.de/soga/data/raw-data/students.csv")
+  
+  lm.reg <- lm(weight ~ major, data=students)
+  summary(lm.reg)
+  AIC(lm.reg)
+``` 
+
+Now try the same thing with salary as the outcome variable. Which is the best model according to AIC? Does that mean that the variables in that model are the only significant varaibles that affect the salary?
+
+
+
+

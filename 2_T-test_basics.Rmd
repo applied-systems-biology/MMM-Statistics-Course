@@ -1,0 +1,154 @@
+---
+title: "T-test"
+output:
+  html_document:
+    df_print: paged
+  html_notebook: default
+---
+```{r import libraries, echo = FALSE, message=FALSE}
+rm(list = ls()) # This clear all R-history and should be included in all code
+library(dplyr)  # Library for more elegant data handling
+library(ggplot2)# Powerful plotting library
+```
+
+## Assumptions of a t-test
+
+As we discussed it the lecture, one common misconception is that an assumption of the t-test is that data have to Normally distributed for the test to be appropriate. On the other hand, you might have heard that you can still use the t-test if you have "many" datapoints because of the Central limit theorem. But just because you have lots of data from a distribution, does that mean that data becomes Normal distributed? We will start by generating some data and look at what happens with distributions as you increase sample sizes. This will also serve as an introduction to data generation using R. 
+
+Let us start by generating $n$ datapoints from the uniform distribution. We also check the data for normality using the Shapiro-Wilk test, one of the most used. How many samples from the Uniform distribution do you need before the test reject the hypothesis that the data could come from a Normal distribution? You can also try this by sampling from the Exponential distribution (rexp) and Poisson distribution (rpois) with $\lambda=5$. Does any of the distributions require very different number of samples to reject the hypothesis of Normal distribution? If so, why do you think that is?
+
+
+```{r generate data, echo = TRUE, message=TRUE}
+  set.seed(123)
+  n = 3  # Number of datapoints 
+  x <- runif(n, min=0,max=10) # Draw from a uniform distribution
+  hist(x) # Plot a simple histogram of the data 
+  print(shapiro.test(x))
+```
+
+Now we will look at sampling from a normal distribution with a few outliers. Below is the code to draw ten samples from a Normal distribution and concatenating on three outliers. Shapiro-Wilk reject the hypothesis that this data is Normal distributed. This is naturally correct, because of the outliers, but can we fix it by sampling more? Try to increase the number of samples from the Normal distribution and see if you can "convince" the Shapiro-Wilk test that the data is, in practice, Normal distributed.
+
+```{r generate data norm, echo = TRUE, message=TRUE}
+  set.seed(123)
+  n = 10  # Number of datapoints 
+  x <- rnorm(n, mean=0, sd=10) # Draw from a uniform distribution
+  x <- c(x, c(50, 55, 40))
+  hist(x) # Plot a simple histogram of the data 
+  print(shapiro.test(x))
+```
+
+
+Let us go back to data from the Uniform distribution and remind yourself that the condition on the t-test for two populations actually is that the means of the populations are Normal distributed. As you probably saw, you need ~40 samples to get Shapiro-Wilks to reject the null-hypothesis. But how does the distribution of the mean look if you sample that much from the uniform distribution? Below is the code to sample 40 points from the Uniform distribution, calculate the mean and repeating in 100 times. Add the code to show the distribution and perform the Shapiro-Wilks test. Can we still use the t-test although we've seen that the data itself are not Normal distributed.
+
+```{r mean dist, echo = TRUE, message=TRUE}
+  set.seed(123)
+  n = 40  # Number of datapoints 
+  x <- replicate(100, mean(runif(n, min=0,max=10))) # Draw from a uniform distribution
+```
+How few samples from the Uniform distribution can you take and still have Shapiro-Wilk not reject the Normal distribution hypothesis? You can also check this for other distributions. What is special with sampling and calculating the mean from the Normal distribution? Feel free to sample from other distribution to check the same thing.
+
+\newpage
+
+## T-test of the iris data
+
+To actually start looking at the t-test we will return to the iris dataset we already plotted. Below we have filtered out the Setosa species of iris into its own data frame
+Plot the distribution and check the normality of the sepal length with Shapiro-Wilk. Repeat this for the other two species if iris.
+
+```{r invesigate iris, echo = TRUE, message=TRUE}
+  data(iris)
+
+  iris_setosa <- iris %>% filter(Species == "setosa") # Get a dataframe with only the Setosa species
+```
+
+As this data obey even the very strict condition of being approximately Normal distributed by its own we can without hesitation go on and perform significance testing using the t-test. We start by using the most basic syntax, i.e. giving the function t.test() two vectors.
+
+```{r t-test 1, echo = TRUE, message=TRUE}
+  x <- iris %>% filter(Species == "setosa") %>% select(Sepal.Length)
+  y <- iris %>% filter(Species == "versicolor") %>% select(Sepal.Length)
+  
+  t.test(x, y)
+  
+```
+
+We see that we get a lot of information out of this simple command and we have practically performed the test we need to. A lot of more information about the R implementation of the t-test can be obtained by writing "?t.test" in the Console. Now, please make the following adjustments to the test:
+
+1. Figure out if the test is two-sided or one-sided. Try to change it and see what happens.
+
+2. We have the information that we ran "Welch Two Sample t-test". How would we instead run a Student t-test? Is that appropriate?
+
+3. How many samples do we need to still have significant difference between the Setosa and Versicolor? The code "df_sampled <- df %>% slice_sample(n = j)" might help you with this.
+
+4. Repeat step 3 with Versicolor vs. Virginica.
+
+An alternative to extracting two number vectors is to use R's formula interface to see if sepal length is different between species. This is more in line with most other R syntax and functionality. It is also more compact and easier to check different conditions.
+
+```{r t-test 2, echo = TRUE, message=TRUE}
+  iris_set_ver <- iris %>% filter(Species != "virginica") # Select all rows that is not the Virginica species
+  
+  t.test(Sepal.Width ~ Species, data=iris_set_ver)
+  
+```
+
+Play around with the code above. Perform the t-test between all species of Iris available and for at least one other measurement. 
+
+As you probably know, most journals want significance indicators in the figures. In R, this is very easy with the *ggpubr* library. Below is the code that both calculate and plot the p-values within a ggplot object.
+```{r plot_sign, echo=TRUE}
+library(ggpubr)  # For significance indicators
+
+# Define the comparisons you want to test
+comparisons <- list(
+  c("setosa", "versicolor"), 
+  c("setosa", "virginica")
+)
+
+# Create the boxplot with significance indicators
+p <- ggplot(iris, aes(x = Species, y = Sepal.Length)) + 
+  geom_boxplot() +  
+  geom_jitter(width = 0.2, alpha = 0.6, size = 2) +  
+  theme_minimal() +  
+  xlab("") +  
+  ylab("Sepal Length") +  
+  stat_compare_means(comparisons = comparisons, method = "t.test", label = "p.signif")  # Add significance brackets
+
+p
+```
+
+This code chunk also contain some additional options for ggplot, but the main addition is the stat_compare_means from the ggpubr library. This take care of the calculation of the significance testing for the defined *comparisons* and add them to the plot. For this code chunk, I have two tasks for you:
+
+1. Adjust the code to calculate and plot the significance between Versicolor and Virginica as well.
+
+2. Change the plotting so that we see the actual p-value instead of just stars as indicator.
+
+## Paired test
+
+So far we have treated the data as entirely independent. One important assumption in is that all data points are independent and identically distributed, also abbreviated i.i.d. This is not specific to the t-test, but is generally an assumption for all types of significance testing. However, in some cases we can make use of dependence between data points to our advantage. The most basic example is the paired t-test which we use when we can take the individual data points from our two samples and pair them up. As an example, we want to determine which of two written exams are harder. Therefore we let 7 students take two different exams and compare the results. There are naturally some additional study design problems with this that we assume that we took care of. Could you come up with any examples of things that you would have to think of when designing this experiment? 
+
+```{r generate paired data, echo = TRUE, message=FALSE}
+  set.seed(420)
+  n <- 7
+  Students <- LETTERS[1:n]
+  Exam1 <- rpois(7, 10)
+  Exam2 <- Exam1 + (rpois(7,2)) 
+  
+  Exam_results <- data.frame(Students, Exam1, Exam2) # This is how we bind vectors into a data frame
+  Exam_results_long <- pivot_longer(Exam_results,          # Convert the dataframe to the long format
+                                    cols = starts_with("Exam"), 
+                                    names_to = "Exam", 
+                                    values_to = "Score")
+```
+
+Plot the exam results for the two exams and try to color code the results based on which student performed the test. The ggplot command geom_jitter() might be useful. Calculate the p-value between the tests using both unpaired and paired t-test. Can we decide if either test is significantly easier based on either of these test?
+
+```{r paired data analysis, echo = FALSE, message=FALSE}
+
+```
+
+So how does the paired t-test work? Below is a piece of code for calculating the difference in the exam result for each student and adding as a column in the dataframe. Visualize the difference and calculate the p-value using the one sample t-test. Do you notice some connection between the one sample t-test and the paired t-test? What is the null hypothesis of the one-sample t-test?
+
+```{r paired data analysis 2, echo = TRUE, message=FALSE}
+  Exam_results$diff = Exam_results$Exam2 - Exam_results$Exam1
+```
+
+We have here seen that paired data can increase the power of the t-test compared to a independent two-sample test. One limitation is naturally that we have to have both measurements that need to be paired, in this example both exam results for each student. If there are students that only took one exam, they have to be excluded. For an independent test that is obviously not a problem, you could even have a different number of students that take Exam1 than Exam2. 
+
+We will now look at an alternative to the t-test, please move on to the file 3_Wilcoxon_and_Mark_Whitney_U.Rmd.

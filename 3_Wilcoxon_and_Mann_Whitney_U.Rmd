@@ -1,0 +1,64 @@
+---
+title: "WMWU"
+output:
+  html_notebook: default
+  html_document:
+    df_print: paged
+---
+
+```{r import libraries, echo = FALSE, message=FALSE}
+rm(list = ls()) # This clear all R-history and should be included in all code
+library(dplyr)  # Library for more elegant data handling
+library(ggplot2)# Powerful plotting library
+library(tidyr)
+```
+
+## Non-parametric tests
+
+The non-parametric alternatives to the t-test are the Mann-Whitney-U (MWU) test for independent data and the Wilcoxon test for paired data. The names are a bit confusing, MWU is also know as Mann–Whitney–Wilcoxon (MWW), Wilcoxon rank-sum test, just rank-sum test or Wilcoxon–Mann–Whitney test. The paired Wilcoxon test is likewise known as Wilcoxon signed-rank or just signed-rank. 
+
+Below we load a dataframe with two samples, x and y. Run the t-test and the Mann-Whitney-U test on x vs. y. R's implementation of MWU is called wilcox.test(). Does the tests agree on the significance? If not, why do you think they don't agree? If they don't agree any you have some time, you can try to construct some data on your own that have the property that it significant for the other test.
+
+```{r MWU vs t-test data, echo = TRUE, message=TRUE}
+
+  df <- read.csv("MWU_vs_ttest.csv")
+  
+```
+
+Let us explore one of the main differences between the t-test and MWU. The code chunk below sample three data points from two normal distributions with a small difference in means between them. Run both the t-test and MWU (wilcox.test()) for *x* vs. *y*. You should see that neither test provide a significance difference. Please do the following experiments:
+
+1. Increase the difference in means between the samples and see what happens with the p-values given by the t-test and MWU. What do you see and why?
+
+2. Find a difference where one test is just significant (p<0.05) and increase the number of samples. What happens to the both p-values when you do that?
+
+```{r MWU vs t-test small sample sizes, echo = TRUE, message=TRUE}
+  set.seed(420)
+  n = 3
+  x <- rnorm(n, mean=0, sd=1)
+  y <- rnorm(n, mean=0.1, sd=1)
+  df <- data.frame(x,y)
+  df_long <- df %>%
+  pivot_longer(
+    cols = c(x, y),
+    names_to = "id",
+    values_to = "value"
+  )                     # This transform the dataframe to a format that fits to the formula style of ggplot 
+  ggplot(df_long, aes(x=id, y=value)) + geom_boxplot() + geom_jitter() + theme_minimal()
+
+```
+
+## Paired non-parametric test (Wilcoxon)
+
+Generate some paired data, you can either use the example from the paired t-test or do your own data. Experiment with the data to answer the following questions:
+
+1. What is the minimum number of samples you need for the Wilcoxon test to be able to give significance? Which conditions have to be satisfied for this to work?
+
+2. What are "ties" and why are they a problem from MWU and Wilcoxon, but not flagged as an issue for the t-test.
+
+```{r paired data Wilcoxon, echo = TRUE, message=FALSE}
+  set.seed(123)
+  n = 3
+  # Add code here to create samples, run the significance tests and possibly visualize the smaples
+```
+
+

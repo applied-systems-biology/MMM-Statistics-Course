@@ -1,0 +1,94 @@
+---
+title: "Anova and Multiple comparisons"
+output: html_notebook
+---
+
+```{r import libraries, echo = FALSE, message=FALSE}
+rm(list = ls()) # This clear all R-history and should be included in all code
+library(dplyr)  # Library for more elegant data handling
+library(ggplot2)# Powerful plotting library
+library(tidyr)
+```
+
+## Linear regression and ANOVA
+
+As we mentioned in the lecture, ANOVA is actually just linear regression applied to categorical data. First of all take a minute to remind yourself of what these terms are:
+
+1. Dependent vs. independent variables.
+
+2. Categorical variables. Is there an difference if those are dependent or independent?
+
+3. Ordinal variables. Are there cases where these can be "transformed" into one of the other types?
+
+4. Continuous variables.
+
+We will now go back to the Iris dataset as we actually had three species and first of all do a regression of sepal width as a function of species. We see that the linear model *lm()* follow the same kind of syntax as the t-test in R. The *summary()* command gives us a lot of information about the fitted model.
+```{r iris data, echo = TRUE, message=TRUE}
+  data(iris)
+
+  lm.fit <- lm(Sepal.Width ~ Species, data=iris)
+  summary(lm.fit)
+```
+
+Your first task is to interpret the model. Try to answer the following questions:
+
+1. What are the *Estimate* values?
+
+2. What is the interpretation of the p-values in the rightmost column? What test was used? What null-hypothes was used for (Intercept) and Speciesvirginica?
+
+3. Did we get all comparisons? How would you change this? Hint: ?relevel
+
+Now we will move on to ANOVA. Use the *aov()* command to calculate the significance of the sepal width between species in the Iris dataset.
+
+```{r iris data ANOVA, echo = TRUE, message=TRUE}
+  #  Add code here to see the ANOVA result of the Sepal.Width vs. Species
+```
+
+Compare your ANOVA output to the results from the linear regression model. Is information missing in either model? 
+
+## Multiple Comparison Adjustment
+
+As we have seen, is the significance between the Sepal Widths very large. Never the less, we will use this to start looking at techniques for multiple comparison correction. You might have noticed that the *t.test()* command only takes exactly two populations even if we use the formula syntax. Therefore we use the command *pairwise.t.test()* to automatically get the significance between all populations in the data. Not that the somewhat confusing nomenclature, "pairwise" is different from "paired"!
+
+Before we just start to enter different corrections methods in the code below, you should have a think how many comparisons we have in the Iris dataset if you do pairwise comparisons. Can you predict what the Bonferroni adjusted p-values will be? After doing that prediction, you can enter *p.adjust.method = "bonferroni"* and see if you were correct.
+
+```{r pairwise, echo = TRUE, message=TRUE}
+  ptt <- pairwise.t.test(x=iris$Sepal.Width, g=iris$Species, p.adjust.method = "none", pool.sd = FALSE)
+  print(ptt)
+```
+
+We have actually already seen multiple comparisons when we plotted p-values using the *stat_compare_means()* command for *ggpubr*, but we did not adjust for the multiple comparisons. Unfortunately, *stat_compare_means()* does not have an option to correct for multiple comparisons. One option is to use the *stat_pvalue_manual()* where you can calculate p-values with another method and then add them nicely. Adjust the code below to show the Bonferroni corrected p-vlaues for the Iris dataset.
+
+```{r plot_sign, echo=TRUE}
+library(ggpubr)  # For significance indicators
+
+# Define the comparisons you want to test
+comparisons <- list(
+  c("setosa", "versicolor"), 
+  c("setosa", "virginica"), 
+  c("versicolor", "virginica")
+)
+
+# Create the boxplot with significance indicators
+p <- ggplot(iris, aes(x = Species, y = Sepal.Width)) + 
+  geom_boxplot() +  
+  geom_jitter(width = 0.2, alpha = 0.6, size = 2) +  
+  theme_minimal() +  
+  xlab("") +  
+  ylab("Sepal Length") +  
+  stat_compare_means(comparisons = comparisons, method = "t.test", label = "p.format")  # Add significance brackets
+
+p
+
+```
+
+As an other, and possibly more realistic, example we are broadly going to follow this example: https://www.geo.fu-berlin.de/en/v/soga-r/Basics-of-statistics/ANOVA/Multiple-Comparisons/index.html. 
+
+Below we load the data for a large amount of students and we want to check if the weight of students is significantly different between major subjects. Investigate if this is true. You can try different correction methods and even use different base methods for determining significance for multiple classes. Does the number of significant differences depend on the correction method?
+
+```{r student code, echo = TRUE, message=TRUE}
+  students <- read.csv("https://userpage.fu-berlin.de/soga/data/raw-data/students.csv")
+  
+```
+
+

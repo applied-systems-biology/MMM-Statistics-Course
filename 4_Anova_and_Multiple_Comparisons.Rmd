@@ -34,7 +34,7 @@ Your first task is to interpret the model. Try to answer the following questions
 
 1. What are the *Estimate* values?
 
-2. What is the interpretation of the p-values in the rightmost column? What test was used? What null-hypothes was used for (Intercept) and Speciesvirginica?
+2. What is the interpretation of the p-values in the rightmost column? What test was used? What Null hypothes was used for (Intercept) and Speciesvirginica?
 
 3. Did we get all comparisons? How would you change this? Hint: ?relevel
 
@@ -91,4 +91,4 @@ Below we load the data for a large amount of students and we want to check if th
   
 ```
 
-
+If the data download would not work, a copy of the data is in the GitHub repository where you got this Notebook.

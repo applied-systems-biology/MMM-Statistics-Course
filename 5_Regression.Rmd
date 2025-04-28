@@ -1,0 +1,77 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r import libraries, echo = FALSE, message=FALSE}
+rm(list = ls()) # This clear all R-history and should be included in all code
+library(dplyr)  # Library for more elegant data handling
+library(ggplot2)# Powerful plotting library
+library(tidyr)
+```
+
+## Linear regression
+As discussed, ANOVA and t-test are both based on linear regression with categorical independent variables. Now we will briefly explore the case when the independent variable is continuous and linear regression is the best solution. We will again use the student data set that we used for multiple comparisons. Below is the code to load the data and to perform a linear regression of weight vs. height. Unsurprisingly, there is a significant increase in weight with increasing height.
+ 
+```{r student data, echo = TRUE, message=TRUE}
+  students <- read.csv("https://userpage.fu-berlin.de/soga/data/raw-data/students.csv")
+  
+  lm.reg <- lm(weight ~ height, data=students)
+  summary(lm.reg)
+``` 
+Perform the following tasks:
+
+1. Check if the linear regression is appropriate using at least one of the the options we discussed.
+
+2. Find a regression between two variables in the student data where you can state that a linear regression is not appropriate
+
+3. Find another regression, besides weight vs. height, between two variables in the student data where you have a significant relationship and linear regression is appropriate.
+
+4. What issues do you see with the variable *salary* in the data? Does it work to do regression based on salary? Why does/doesn't it work?
+
+## Logistic regression
+
+So far we have only been considering outcome variables that are continuous, or at least discrete with enough levels so that they can be treated as continuous or ordinal on a large scale. We will here use the student dataset again and look specifically at the gender variable. First we look if there is a different 
+
+```{r salary gap, echo = TRUE, message=TRUE, warning=FALSE}
+  library(ggpubr)
+  t.sal <- t.test(salary ~ gender, data=students, na.action = na.omit)
+  print(t.sal)
+  
+  comparisons <- list(
+  c("Female", "Male")
+  )
+  p <- ggplot(aes(x=gender, y=salary), data=students) + geom_boxplot() + theme_minimal() + stat_compare_means(comparisons = comparisons, method = "t.test", label = "p.signif")
+  p
+``` 
+
+We see that there is significant difference in salary between the genders. But what if we want to turn around the question to "What is the probability that a Female earn $50000?". To answer this it is better to use logistical regression. First, we have to re-code *Male* and *Female* to 0 and 1.
+
+```{r recoding, echo = TRUE, message=TRUE, warning=FALSE}
+ students <- students %>%
+  mutate(gender_encoded = if_else(gender == "Male", 0, 1))
+``` 
+
+We can now fit a logistic model to predict the probability of gender based on salary. For this we actually fit a Generalized Linear Model using the *glm()* command. This require that we specify a *family*, also known as a link function. For logistic regression we have to set *family=binomial* as the data we are fitting is 0 or 1.
+
+```{r logistic model prediction, echo = TRUE, message=TRUE, warning=FALSE}
+  logistic_model <- glm(gender_encoded ~ salary, data = students, family = binomial)
+  summary(logistic_model)
+  
+  # We here create a data frame with *salary* ranging from min to max in the students dataframe and predict the probability of gender based on the salary
+  prediction_data <- data.frame(salary = seq(min(students$salary, na.rm = TRUE), max(students$salary, na.rm = TRUE), length.out = 1000))
+  prediction_data$gender_prob = predict(logistic_model, newdata=prediction_data, type="response") # predict() is the standard way to evaluate machine learning in R
+  
+  p <- ggplot() +
+  # Points layer from cell_counts_facs
+  geom_point(data = students, aes(x = salary, y = gender_encoded), color = "blue", alpha = 1.0) +
+  
+  # Line layer from new_data
+  geom_line(data = prediction_data, aes(x = salary, y = gender_prob), color = "red")
+  p
+```
+
+Now use a logistic regression model to answer the question what probability is there that a female student is taller than 180 cm?
+
+
+

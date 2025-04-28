@@ -58,7 +58,14 @@ Generate some paired data, you can either use the example from the paired t-test
 ```{r paired data Wilcoxon, echo = TRUE, message=FALSE}
   set.seed(123)
   n = 3
-  # Add code here to create samples, run the significance tests and possibly visualize the smaples
+  # Add code here to create samples, run the significance tests and possibly visualize the samples
 ```
 
+## Effect size
 
+Calculate the Effect size between the Sepal Length of the different species of iris in the data set. Try at least Cohen's d and Hedges' g. Is there any diffrence?
+
+```{r Effect size, echo = TRUE, message=FALSE}
+  library(effectsize)
+  iris <- data(iris)
+```

@@ -17,7 +17,7 @@ library(tidyr)
 
 The non-parametric alternatives to the t-test are the Mann-Whitney-U (MWU) test for independent data and the Wilcoxon test for paired data. The names are a bit confusing, MWU is also know as Mann–Whitney–Wilcoxon (MWW), Wilcoxon rank-sum test, just rank-sum test or Wilcoxon–Mann–Whitney test. The paired Wilcoxon test is likewise known as Wilcoxon signed-rank or just signed-rank. 
 
-Below we load a dataframe with two samples, x and y. Run the t-test and the Mann-Whitney-U test on x vs. y. R's implementation of MWU is called wilcox.test(). Does the tests agree on the significance? If not, why do you think they don't agree? If they don't agree any you have some time, you can try to construct some data on your own that have the property that it significant for the other test.
+Below we load a dataframe with two samples, x and y. Run the t-test and the Mann-Whitney-U test on x vs. y. R's implementation of MWU is called *wilcox.test()*. Does the tests agree on the significance? If not, why do you think they don't agree? If they don't agree any you have some time, you can try to construct some data on your own that have the property that it is only significant for the other test.
 
 ```{r MWU vs t-test data, echo = TRUE, message=TRUE}
 
@@ -49,7 +49,7 @@ Let us explore one of the main differences between the t-test and MWU. The code 
 
 ## Paired non-parametric test (Wilcoxon)
 
-Generate some paired data, you can either use the example from the paired t-test or do your own data. Experiment with the data to answer the following questions:
+Generate some paired data, you can either use the example from the paired t-test or generate your own data. Experiment with the data to answer the following questions:
 
 1. What is the minimum number of samples you need for the Wilcoxon test to be able to give significance? Which conditions have to be satisfied for this to work?
 

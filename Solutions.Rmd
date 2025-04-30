@@ -1,0 +1,319 @@
+---
+title: "Solutions"
+output: html_notebook
+---
+```{r import libraries, echo = FALSE, message=FALSE}
+rm(list = ls()) # This clear all R-history and should be included in all code
+library(dplyr)  # Library for more elegant data handling
+library(ggplot2)# Powerful plotting library
+library(tidyr)
+```
+
+## Assumptions of a t-test
+
+```{r generate data, echo = TRUE, message=TRUE}
+  set.seed(123)
+  n = 33  # Number of datapoints 
+  x <- runif(n, min=0,max=10) # Draw from a uniform distribution
+  hist(x) # Plot a simple histogram of the data 
+  print(shapiro.test(x))
+```
+```{r generate data exp, echo = TRUE, message=TRUE}
+  set.seed(123)
+  n = 9  # Number of datapoints 
+  x <- rexp(n, rate=1) # Draw from a uniform distribution
+  hist(x) # Plot a simple histogram of the data 
+  print(shapiro.test(x))
+```
+```{r generate data pois, echo = TRUE, message=TRUE}
+  set.seed(123)
+  n = 60  # Number of datapoints 
+  x <- rpois(n, lambda=5) # Draw from a uniform distribution
+  hist(x) # Plot a simple histogram of the data 
+  print(shapiro.test(x))
+```
+
+```{r generate data norm, echo = TRUE, message=TRUE}
+  set.seed(123)
+  n = 1000  # Number of datapoints 
+  x <- rnorm(n, mean=0, sd=10) # Draw from a uniform distribution
+  x <- c(x, c(50, 55, 40))
+  hist(x) # Plot a simple histogram of the data 
+  print(shapiro.test(x))
+```
+
+```{r mean dist, echo = TRUE, message=TRUE}
+  set.seed(123)
+  n = 2  # Number of datapoints 
+  x <- replicate(100, mean(runif(n, min=0,max=10))) # Draw from a uniform distribution
+  hist(x)
+  print(shapiro.test(x))
+```
+
+## T-test of the iris data
+
+```{r invesigate iris, echo = TRUE, message=TRUE}
+  data(iris)
+
+  iris_setosa <- iris %>% filter(Species == "setosa") # Get a dataframe with only the Setosa species
+  iris_versicolor <- iris %>% filter(Species == "versicolor")
+  iris_virginica <- iris %>% filter(Species == "virginica")
+  
+  shapiro.test(iris_setosa$Sepal.Length)
+  shapiro.test(iris_versicolor$Sepal.Length)
+  shapiro.test(iris_virginica$Sepal.Length)
+  
+```
+
+```{r invesigate iris, echo = TRUE, message=TRUE}
+   t.test(iris_setosa$Sepal.Length, iris_versicolor$Sepal.Length)
+```
+If we do *?t.test* we see that "two.sided" is the default so we are doing the hypothesis $H_0: \mu_A = \mu_B$. If you use "less" or "greater" you have to take care what order you enter the vectors.
+
+To do Student's t-test, we have to set *var.equal = TRUE*. To check if it's appropriate we check the standard deviation of the speal lengths.
+```{r invesigate iris, echo = TRUE, message=TRUE}
+  sd(iris_setosa$Sepal.Length)
+  sd(iris_versicolor$Sepal.Length)
+  sd(iris_virginica$Sepal.Length)
+  
+```
+As we see that Virginica has approximately twice the standard deviation compared to Setosa, it is more appropriate to use Welsh's test.
+```{r invesigate iris Vir, echo = TRUE, message=TRUE}
+  j = 6
+  iris_setosa <- iris %>% filter(Species == "setosa") %>% slice_sample(n = j) # Get a dataframe with only the Setosa species
+  iris_versicolor <- iris %>% filter(Species == "versicolor") %>% slice_sample(n = j)
+  iris_virginica <- iris %>% filter(Species == "virginica") %>% slice_sample(n = j)
+  
+  t.test(iris_setosa$Sepal.Length, iris_versicolor$Sepal.Length)
+  t.test(iris_virginica$Sepal.Length, iris_versicolor$Sepal.Length)
+```
+
+```{r plot_sign, echo=TRUE}
+library(ggpubr)  # For significance indicators
+
+# Define the comparisons you want to test
+comparisons <- list(
+  c("setosa", "versicolor"), 
+  c("setosa", "virginica"), 
+  c("versicolor", "virginica")
+)
+
+# Create the boxplot with significance indicators
+p <- ggplot(iris, aes(x = Species, y = Sepal.Length)) + 
+  geom_boxplot() +  
+  geom_jitter(width = 0.2, alpha = 0.6, size = 2) +  
+  theme_minimal() +  
+  xlab("") +  
+  ylab("Sepal Length") +  
+  stat_compare_means(comparisons = comparisons, method = "t.test", label = "p.format")  # Add significance brackets
+
+p
+
+```
+
+## Paired t-test
+```{r generate paired data, echo = TRUE, message=FALSE}
+  set.seed(420)
+  n <- 7
+  Students <- LETTERS[1:n]
+  Exam1 <- rpois(7, 10)
+  Exam2 <- Exam1 + (rpois(7,2)) 
+  
+  Exam_results <- data.frame(Students, Exam1, Exam2) # This is how we bind vectors into a data frame
+  Exam_results_long <- pivot_longer(Exam_results,          # Convert the dataframe to the long format
+                        cols = starts_with("Exam"), 
+                        names_to = "Exam", 
+                        values_to = "Score")
+```
+
+Plot the exam results for the two exams and try to color code the results based on which student performed the test. The ggplot command geom_jitter() might be useful. Calculate the p-value between the tests using both unpaired and paired t-test. Can we decide if either test is significantly easier based on either of these test?
+
+```{r paired data analysis, echo = FALSE, message=FALSE}
+  p <- ggplot(aes(x=Exam, y=Score), data=Exam_results_long) + geom_boxplot() + geom_jitter(aes(color=Students)) + theme_minimal()
+  p
+  t.test(Exam_results$Exam1, Exam_results$Exam2)
+  t.test(Exam_results$Exam1, Exam_results$Exam2, paired = TRUE)
+```
+
+```{r paired data analysis 2, echo = TRUE, message=FALSE}
+  Exam_results$diff = Exam_results$Exam2 - Exam_results$Exam1
+  p <- ggplot(aes(x=diff), data=Exam_results) + geom_histogram() + theme_minimal()
+  p
+  
+  t.test(Exam_results$diff)
+```
+
+The Null hypothesis of the one sample t-test is $H_0: \mu=0$.
+
+## MVU vs. T-test
+
+```{r MWU vs t-test data, echo = TRUE, message=TRUE}
+
+  df <- read.csv("MWU_vs_ttest.csv")
+  t.test(df$x,df$y)
+  wilcox.test(df$x,df$y)
+  df_long <- pivot_longer(df,          # Convert the dataframe to the long format
+                        cols = c(x,y), 
+                        names_to = "Variable", 
+                        values_to = "Value")
+  p <- ggplot(data=df_long, aes(x=Value,color=Variable)) + geom_histogram()+ geom_freqpoly()  + theme_minimal()
+  p
+  summary(df)
+```
+
+The means of *x* and *y* are similar, but the medians are quite different. This is 
+
+
+Example of samples that give significant differences by t-test and non-significant for MWU. This is because these samples have different means and same median. To get the non-significance for MWU it is additionally important that the distribution shape are "similar" with respect to skewness. Sampling from a Exponential and Normal distribution with the same median will probably not give this result.
+```{r MWU vs t-test data, echo = TRUE, message=TRUE}
+  set.seed(123)
+  n = 250
+  x1 <- rlnorm(n, meanlog=log(log(2)), sdlog=2)
+  y1 <- rexp(n, rate = 1)
+  hist(x1)
+  hist(y1)
+  t.test(x1,y1)
+  wilcox.test(x1,y1)
+  median(x1)
+  median(y1)
+```
+
+## Paired non-parametric test
+1. Given that all samples from one condition is larger than the samples from the other, you will need at least six samples to get p<0.05. 
+
+2. Ties are a problem because data points are ranked and if the differences are the same they would get the same rank, therefore you have to introduce some tiebreaker. This is not a problem for the t-test as the assumption is that the underlying data is continuous, therefore a tie, or even two datapoints have difference zero, can never happen. One of the strongest argument for ever using non-parametric test is that the data are not continuous. This is especially true if the data is ordinal and there is a reason to think that the distance between ordinal levels are not equal.
+
+```{r paired data Wilcoxon, echo = TRUE, message=FALSE}
+  set.seed(123)
+  n = 3
+  Students <- LETTERS[1:n]
+  Exam1 <- rpois(n, 10)
+  Exam2 <- Exam1 + (rpois(n,2)) -1 
+  
+  Exam_results <- data.frame(Students, Exam1, Exam2) # This is how we bind vectors into a data frame
+  
+  t.test(Pair(Exam1, Exam2) ~ 1, data = Exam_results)
+  wilcox.test(Pair(Exam1, Exam2) ~ 1, data = Exam_results)
+```
+
+
+## Linear regression and ANOVA
+
+```{r iris data, echo = TRUE, message=TRUE}
+  data(iris)
+
+  aov.iris <- aov(Sepal.Width ~ Species, data=iris)
+  summary(aov.iris)
+```
+
+## Multiple Comparison Adjustment
+
+```{r plot_sign, echo=TRUE}
+library(ggpubr)  # For significance indicators
+
+ptt <- compare_means(Sepal.Width~Species, data=iris, method="t.test", p.adjust.method = "bonferroni")
+
+ptt <- ptt %>% mutate(y.position = c(4.5, 4.75, 5.0)) # You have to add y-positions 
+
+# Create the boxplot with significance indicators
+p <- ggplot(iris, aes(x = Species, y = Sepal.Width)) + 
+  geom_boxplot() +  
+  geom_jitter(width = 0.2, alpha = 0.6, size = 2) +  
+  theme_minimal() +  
+  xlab("") +  
+  ylab("Sepal Length") +  stat_pvalue_manual(ptt, label = "p = {p.adj}")
+
+p
+```
+
+```{r student code, echo = TRUE, message=TRUE}
+  students <- read.csv("https://userpage.fu-berlin.de/soga/data/raw-data/students.csv")
+  
+  ptts <- pairwise.t.test(x=students$weight, g=students$major, p.adjust.method = "bonferroni")
+  print(ptts)
+```
+
+
+There are many "bad" fits in the student data set, but one of the most obvious is *nc.score* as a function of *age*. It is obvious from both the histogram of the residuals and the Q-Q plot that this is not a great fit.
+```{r student data1, echo = TRUE, message=TRUE}
+  students <- read.csv("https://userpage.fu-berlin.de/soga/data/raw-data/students.csv")
+  
+  lm.reg.bad <- lm(nc.score~age, data=students)
+  summary(lm.reg.bad)
+  hist(residuals(lm.reg.bad))
+  plot(lm.reg.bad)
+  
+``` 
+
+I have here chosen to pick *salary* vs. *score1* as a good example of a fit. There might be others. 
+
+If we look at the *salary* variable, there is obviously a lot of missing data. The use of *lm(salary ~ score1, data=students)* still work fine as the the parameter *na.action* is set to *na.omit* by default. It is important to be aware that this is happening as we are actually fitting the model to much less data than, for example, the model *nc.score~age*.
+```{r student data5, echo = TRUE, message=TRUE}
+  lm.reg.good <- lm(salary ~ score1, data=students)
+  summary(lm.reg.good)
+  hist(residuals(lm.reg.good))
+  plot(lm.reg.good)
+``` 
+
+## Logistic regression
+
+```{r logistic model prediction, echo = TRUE, message=TRUE, warning=FALSE}
+  logistic_model <- glm(gender_encoded ~ height, data = students, family = binomial)
+  summary(logistic_model)
+  
+  # We here create a data frame with *salary* ranging from min to max in the students dataframe and predict the probability of gender based on the salary
+  prediction_data <- data.frame(height = seq(min(students$height, na.rm = TRUE), max(students$height, na.rm = TRUE), length.out = 100))
+  prediction_data$gender_prob = predict(logistic_model, newdata=prediction_data, type="response") # predict() is the standard way to evaluate machine learning in R
+  
+  p <- ggplot() +
+  # Points layer from cell_counts_facs
+  geom_point(data = students, aes(x = height, y = gender_encoded), color = "blue", alpha = 1.0) +
+  
+  # Line layer from new_data
+  geom_line(data = prediction_data, aes(x = height, y = gender_prob), color = "red")
+  p
+```
+
+## Model selection
+
+```{r student code3, echo = TRUE, message=TRUE}
+  students <- read.csv("https://userpage.fu-berlin.de/soga/data/raw-data/students.csv")
+  
+  lm.reg_1 <- lm(weight ~ major+gender+age, data=students)
+  summary(lm.reg_1)
+  AIC(lm.reg_1)
+  
+  lm.reg_2 <- lm(weight ~ gender+age, data=students)
+  summary(lm.reg_2)
+  AIC(lm.reg_2)
+  
+  lm.reg_3 <- lm(weight ~ gender, data=students)
+  summary(lm.reg_3)
+  AIC(lm.reg_3)
+  #ptts <- pairwise.t.test(x=students$weight, g=students$major, p.adjust.method = "bonferroni")
+  #print(ptts)
+```
+
+```{r student code2, echo = TRUE, message=TRUE}
+  students <- read.csv("https://userpage.fu-berlin.de/soga/data/raw-data/students.csv")
+  
+  lm.reg_1 <- lm(salary ~ major+gender+age, data=students)
+  AIC(lm.reg_1)
+  
+  lm.reg_2 <- lm(salary ~ gender+age, data=students)
+  AIC(lm.reg_2)
+  
+  lm.reg_3 <- lm(salary ~ gender, data=students)
+  AIC(lm.reg_3)
+  
+  lm.reg_4 <- lm(salary ~ major+gender, data=students)
+  AIC(lm.reg_4)
+  
+  lm.reg_5 <- lm(salary ~ major, data=students)
+  AIC(lm.reg_5)
+  
+  #ptts <- pairwise.t.test(x=students$weight, g=students$major, p.adjust.method = "bonferroni")
+  #print(ptts)
+```
+
+

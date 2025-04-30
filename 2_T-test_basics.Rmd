@@ -9,6 +9,7 @@ output:
 rm(list = ls()) # This clear all R-history and should be included in all code
 library(dplyr)  # Library for more elegant data handling
 library(ggplot2)# Powerful plotting library
+library(tidyr)
 ```
 
 ## Assumptions of a t-test

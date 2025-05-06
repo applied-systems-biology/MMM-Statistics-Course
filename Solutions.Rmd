@@ -1,6 +1,8 @@
 ---
 title: "Solutions"
-output: html_notebook
+output:
+  html_document:
+    df_print: paged
 ---
 ```{r import libraries, echo = FALSE, message=FALSE}
 rm(list = ls()) # This clear all R-history and should be included in all code
@@ -52,7 +54,7 @@ library(tidyr)
 
 ## T-test of the iris data
 
-```{r invesigate iris, echo = TRUE, message=TRUE}
+```{r invesigate iris 1, echo = TRUE, message=TRUE}
   data(iris)
 
   iris_setosa <- iris %>% filter(Species == "setosa") # Get a dataframe with only the Setosa species
@@ -65,13 +67,13 @@ library(tidyr)
   
 ```
 
-```{r invesigate iris, echo = TRUE, message=TRUE}
+```{r invesigate iris ttest, echo = TRUE, message=TRUE}
    t.test(iris_setosa$Sepal.Length, iris_versicolor$Sepal.Length)
 ```
 If we do *?t.test* we see that "two.sided" is the default so we are doing the hypothesis $H_0: \mu_A = \mu_B$. If you use "less" or "greater" you have to take care what order you enter the vectors.
 
 To do Student's t-test, we have to set *var.equal = TRUE*. To check if it's appropriate we check the standard deviation of the speal lengths.
-```{r invesigate iris, echo = TRUE, message=TRUE}
+```{r invesigate iris sd, echo = TRUE, message=TRUE}
   sd(iris_setosa$Sepal.Length)
   sd(iris_versicolor$Sepal.Length)
   sd(iris_virginica$Sepal.Length)
@@ -165,7 +167,7 @@ The means of *x* and *y* are similar, but the medians are quite different. This 
 
 
 Example of samples that give significant differences by t-test and non-significant for MWU. This is because these samples have different means and same median. To get the non-significance for MWU it is additionally important that the distribution shape are "similar" with respect to skewness. Sampling from a Exponential and Normal distribution with the same median will probably not give this result.
-```{r MWU vs t-test data, echo = TRUE, message=TRUE}
+```{r MWU vs t-test data 2, echo = TRUE, message=TRUE}
   set.seed(123)
   n = 250
   x1 <- rlnorm(n, meanlog=log(log(2)), sdlog=2)
@@ -174,8 +176,8 @@ Example of samples that give significant differences by t-test and non-significa
   hist(y1)
   t.test(x1,y1)
   wilcox.test(x1,y1)
-  median(x1)
-  median(y1)
+  mean(x1)
+  mean(y1)
 ```
 
 ## Paired non-parametric test
@@ -184,11 +186,11 @@ Example of samples that give significant differences by t-test and non-significa
 2. Ties are a problem because data points are ranked and if the differences are the same they would get the same rank, therefore you have to introduce some tiebreaker. This is not a problem for the t-test as the assumption is that the underlying data is continuous, therefore a tie, or even two datapoints have difference zero, can never happen. One of the strongest argument for ever using non-parametric test is that the data are not continuous. This is especially true if the data is ordinal and there is a reason to think that the distance between ordinal levels are not equal.
 
 ```{r paired data Wilcoxon, echo = TRUE, message=FALSE}
-  set.seed(123)
-  n = 3
+  set.seed(13)
+  n = 5
   Students <- LETTERS[1:n]
   Exam1 <- rpois(n, 10)
-  Exam2 <- Exam1 + (rpois(n,2)) -1 
+  Exam2 <- Exam1 + (rpois(n,6)) -1 
   
   Exam_results <- data.frame(Students, Exam1, Exam2) # This is how we bind vectors into a data frame
   
@@ -208,7 +210,7 @@ Example of samples that give significant differences by t-test and non-significa
 
 ## Multiple Comparison Adjustment
 
-```{r plot_sign, echo=TRUE}
+```{r plot_m_comp, echo=TRUE}
 library(ggpubr)  # For significance indicators
 
 ptt <- compare_means(Sepal.Width~Species, data=iris, method="t.test", p.adjust.method = "bonferroni")
@@ -229,7 +231,7 @@ p
 ```{r student code, echo = TRUE, message=TRUE}
   students <- read.csv("https://userpage.fu-berlin.de/soga/data/raw-data/students.csv")
   
-  ptts <- pairwise.t.test(x=students$weight, g=students$major, p.adjust.method = "bonferroni")
+  ptts <- pairwise.t.test(x=students$weight, g=students$major, p.adjust.method = "holm")
   print(ptts)
 ```
 
@@ -256,6 +258,11 @@ If we look at the *salary* variable, there is obviously a lot of missing data. T
 ``` 
 
 ## Logistic regression
+
+```{r recoding, echo = TRUE, message=TRUE, warning=FALSE}
+ students <- students %>%
+  mutate(gender_encoded = if_else(gender == "Male", 0, 1))
+``` 
 
 ```{r logistic model prediction, echo = TRUE, message=TRUE, warning=FALSE}
   logistic_model <- glm(gender_encoded ~ height, data = students, family = binomial)
